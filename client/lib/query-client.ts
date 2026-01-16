@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { Platform } from 'react-native';
 
 /**
  * Gets the base URL for the Express API server (e.g., "http://localhost:3000")
@@ -6,13 +7,14 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  */
 export function getApiUrl(): string {
   let host = process.env.EXPO_PUBLIC_DOMAIN;
-
   if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
+    // Local development fallback
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:5000';
+    }
+    return 'http://localhost:5000';
   }
-
   let url = new URL(`https://${host}`);
-
   return url.href;
 }
 
@@ -35,7 +37,6 @@ export async function apiRequest(
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
   });
 
   await throwIfResNotOk(res);
@@ -52,7 +53,6 @@ export const getQueryFn: <T>(options: {
     const url = new URL(queryKey.join("/") as string, baseUrl);
 
     const res = await fetch(url, {
-      credentials: "include",
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

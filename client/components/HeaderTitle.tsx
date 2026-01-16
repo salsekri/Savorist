@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h3,
-    color: Colors.light.burgundy,
+    color: Colors.light.cream,
   },
 });

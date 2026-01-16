@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -29,7 +28,6 @@ const TABS = ["ALL", "NEARBY", "TRENDING"];
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState("ALL");
@@ -74,63 +72,65 @@ export default function HomeScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={{
-        paddingTop: headerHeight + Spacing.lg,
         paddingBottom: tabBarHeight + Spacing.xl,
-        paddingHorizontal: Spacing.lg,
       }}
       scrollIndicatorInsets={{ bottom: insets.bottom }}
       refreshControl={
-        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.light.burgundy} />
+        <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.light.cream} />
       }
     >
       <LinearGradient
-        colors={[Colors.light.burgundy, Colors.light.wine]}
-        style={styles.header}
+        colors={['#C62F56', '#66001A']}
+        style={[styles.heroSection, { paddingTop: insets.top + Spacing.lg }]}
       >
-        <Text style={styles.greeting}>Hi, Good morning!</Text>
-        <Text style={styles.title}>Reserve the Best{"\n"}Nearby dining.</Text>
+        <View style={styles.headerContent}>
+          <Text style={styles.greeting}>Hi, Good morning!</Text>
+          <Text style={styles.title}>Reserve the Best{"\n"}Nearby dining.</Text>
+        </View>
+
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={searchText}
+            onChangeText={setSearchText}
+            onFilterPress={handleFilterPress}
+          />
+        </View>
+
+        <Pressable style={({ pressed }) => [styles.promoBanner, pressed && styles.promoPressed]}>
+          <View style={styles.promoContent}>
+            <Text style={styles.promoLabel}>WEEKEND SPECIAL</Text>
+            <Text style={styles.promoTitle}>Up to 50% OFF</Text>
+            <Text style={styles.promoSubtitle}>on selected restaurants</Text>
+            <View style={styles.promoButton}>
+              <Text style={styles.promoButtonText}>Book now</Text>
+            </View>
+          </View>
+        </Pressable>
       </LinearGradient>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={searchText}
-          onChangeText={setSearchText}
-          onFilterPress={handleFilterPress}
-        />
-      </View>
+      <View style={styles.contentSection}>
+        <TabSelector tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <Pressable style={({ pressed }) => [styles.promoBanner, pressed && styles.promoPressed]}>
-        <View style={styles.promoContent}>
-          <Text style={styles.promoLabel}>LIMITED OFFER</Text>
-          <Text style={styles.promoTitle}>Up to 50% OFF</Text>
-          <Text style={styles.promoSubtitle}>on selected restaurants</Text>
-          <View style={styles.promoButton}>
-            <Text style={styles.promoButtonText}>Book now</Text>
-          </View>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Popular Restaurants</Text>
+          <Pressable>
+            <Text style={styles.viewAll}>View all</Text>
+          </Pressable>
         </View>
-      </Pressable>
 
-      <TabSelector tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Popular Restaurants</Text>
-        <Pressable>
-          <Text style={styles.viewAll}>View all</Text>
-        </Pressable>
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#C62F56" style={styles.loader} />
+        ) : (
+          filteredRestaurants.map((restaurant) => (
+            <RestaurantCard
+              key={restaurant.id}
+              restaurant={restaurant}
+              onPress={() => handleRestaurantPress(restaurant.id)}
+              onBook={() => handleBookPress(restaurant.name)}
+            />
+          ))
+        )}
       </View>
-
-      {isLoading ? (
-        <ActivityIndicator size="large" color={Colors.light.burgundy} style={styles.loader} />
-      ) : (
-        filteredRestaurants.map((restaurant) => (
-          <RestaurantCard
-            key={restaurant.id}
-            restaurant={restaurant}
-            onPress={() => handleRestaurantPress(restaurant.id)}
-            onBook={() => handleBookPress(restaurant.name)}
-          />
-        ))
-      )}
     </ScrollView>
   );
 }
@@ -140,18 +140,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.backgroundDefault,
   },
-  header: {
-    padding: Spacing.xl,
-    borderRadius: BorderRadius.md,
+  heroSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
+    borderBottomLeftRadius: BorderRadius.xl,
+    borderBottomRightRadius: BorderRadius.xl,
+  },
+  contentSection: {
+    paddingHorizontal: Spacing.lg,
+  },
+  headerContent: {
     marginBottom: Spacing.lg,
   },
   greeting: {
     ...Typography.small,
+    fontFamily: "Recoleta-SemiBold",
+    fontWeight: "normal",
     color: Colors.light.cream,
     opacity: 0.9,
   },
   title: {
     ...Typography.h1,
+    fontFamily: "Recoleta-SemiBold",
+    fontWeight: "normal",
     color: Colors.light.cream,
     marginTop: Spacing.sm,
   },
@@ -159,10 +170,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   promoBanner: {
-    backgroundColor: Colors.light.burgundy,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: BorderRadius.md,
-    padding: Spacing.xl,
-    marginBottom: Spacing.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   promoPressed: {
     opacity: 0.9,
@@ -171,8 +183,9 @@ const styles = StyleSheet.create({
   promoLabel: {
     ...Typography.caption,
     color: Colors.light.cream,
-    opacity: 0.8,
+    opacity: 0.9,
     marginBottom: Spacing.xs,
+    fontWeight: "600",
   },
   promoTitle: {
     ...Typography.h1,
@@ -184,7 +197,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   promoButton: {
-    backgroundColor: Colors.light.cream,
+    backgroundColor: Colors.light.text,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.lg,
@@ -193,7 +206,7 @@ const styles = StyleSheet.create({
   },
   promoButtonText: {
     ...Typography.small,
-    color: Colors.light.burgundy,
+    color: Colors.light.cream,
     fontWeight: "600",
   },
   sectionHeader: {
@@ -208,7 +221,7 @@ const styles = StyleSheet.create({
   },
   viewAll: {
     ...Typography.small,
-    color: Colors.light.burgundy,
+    color: '#C62F56',
   },
   loader: {
     marginTop: Spacing.xl,
